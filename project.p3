@@ -1,0 +1,63 @@
+import dash
+from dash import dcc, html, dash_table
+from dash.dependencies import Input, Output
+import plotly.express as px
+import pandas as pd
+
+# Load sample data
+df = px.data.iris()
+
+# Initialize app
+app = dash.Dash(__name__)
+app.title = "Iris Dashboard"
+
+# App layout
+app.layout = html.Div([
+    html.H1("🌸 Iris Dataset Dashboard", style={'textAlign': 'center'}),
+
+    html.Div([
+        html.Label("Select Species:"),
+        dcc.Dropdown(
+            id='species-dropdown',
+            options=[{'label': s, 'value': s} for s in df['species'].unique()],
+            value='setosa',
+            clearable=False
+        ),
+    ], style={'width': '40%', 'margin': 'auto'}),
+
+    dcc.Graph(id='scatter-plot'),
+
+    html.H3("Filtered Data Table", style={'textAlign': 'center'}),
+    dash_table.DataTable(
+        id='data-table',
+        columns=[{'name': i, 'id': i} for i in df.columns],
+        page_size=10,
+        style_table={'margin': 'auto', 'width': '80%'},
+        style_cell={'textAlign': 'left'}
+    )
+])
+
+# Callbacks
+@app.callback(
+    [Output('scatter-plot', 'figure'),
+     Output('data-table', 'data')],
+    [Input('species-dropdown', 'value')]
+)
+def update_dashboard(selected_species):
+    filtered_df = df[df['species'] == selected_species]
+
+    fig = px.scatter(
+        filtered_df,
+        x='sepal_width',
+        y='sepal_length',
+        color='species',
+        size='petal_length',
+        hover_data=['petal_width'],
+        title=f"Sepal Width vs Length for {selected_species.title()}"
+    )
+
+    return fig, filtered_df.to_dict('records')
+
+# Run the app
+if __name__ == '__main__':
+    app.run_server(debug=True)
